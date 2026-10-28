@@ -1,0 +1,190 @@
+﻿@model EventosUnison.Models.ViewModels.InteresadosViewModel
+@{
+    ViewData["Title"] = "Interesados";
+    var e = Model.Evento;
+    var total = Model.TotalSi + Model.TotalTalVez + Model.TotalNo;
+    var administradores = Model.TotalSi - Model.ProfesoresInteresados - Model.AlumnosInteresados;
+
+    string Texto(string r) => r switch
+    {
+        "Si" => "Sí",
+        "TalVez" => "Tal vez",
+        _ => "No"
+    };
+
+    string Iniciales(string? nombre) => string.Concat(
+        (nombre ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(p => char.ToUpperInvariant(p[0])));
+}
+
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row g-3 align-items-center">
+            <div class="col-lg-9">
+                <partial name="_EventoInfo" model="e" />
+            </div>
+            <div class="col-lg-3 text-lg-end">
+                <span class="estado estado-@(e.Estado.ToLower())">@e.Estado</span>
+                <div class="mt-3">
+                    @if (User.IsInRole("Administrador"))
+                    {
+                        <a asp-controller="Admin" asp-action="Index" class="btn btn-outline-secondary btn-sm">← Volver al panel</a>
+                    }
+                    else
+                    {
+                        <a asp-action="MisPropuestas" class="btn btn-outline-secondary btn-sm">← Volver a mis propuestas</a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="card stat stat-verde">
+            <div class="card-body">
+                <div class="stat-num">@Model.TotalSi</div>
+                <div class="stat-label">Sí les interesa</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat stat-oro">
+            <div class="card-body">
+                <div class="stat-num">@Model.TotalTalVez</div>
+                <div class="stat-label">Tal vez</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat stat-gris">
+            <div class="card-body">
+                <div class="stat-num">@Model.TotalNo</div>
+                <div class="stat-label">No les interesa</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat stat-cian">
+            <div class="card-body">
+                <div class="stat-num">@Model.TotalRegistrados</div>
+                <div class="stat-label">Registrados</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Interés en el evento</h5>
+            <small class="text-muted">@total @(total == 1 ? "respuesta" : "respuestas")</small>
+        </div>
+
+        <div class="barra-interes" role="img" aria-label="Distribución de las respuestas de interés">
+            @if (Model.TotalSi > 0)
+            {
+                <div class="seg seg-si" style="flex: @Model.TotalSi" title="Sí: @Model.TotalSi"></div>
+            }
+            @if (Model.TotalTalVez > 0)
+            {
+                <div class="seg seg-talvez" style="flex: @Model.TotalTalVez" title="Tal vez: @Model.TotalTalVez"></div>
+            }
+            @if (Model.TotalNo > 0)
+            {
+                <div class="seg seg-no" style="flex: @Model.TotalNo" title="No: @Model.TotalNo"></div>
+            }
+        </div>
+
+        <div class="leyenda-interes">
+            <span><i class="punto punto-si"></i>Sí</span>
+            <span><i class="punto punto-talvez"></i>Tal vez</span>
+            <span><i class="punto punto-no"></i>No</span>
+        </div>
+
+        @if (Model.TotalSi > 0)
+        {
+            <hr />
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <span class="small text-muted">Entre quienes dijeron Sí:</span>
+                @if (Model.AlumnosInteresados > 0)
+                {
+                    <span class="etiqueta">🎓 @Model.AlumnosInteresados @(Model.AlumnosInteresados == 1 ? "alumno" : "alumnos")</span>
+                }
+                @if (Model.ProfesoresInteresados > 0)
+                {
+                    <span class="etiqueta">👨‍🏫 @Model.ProfesoresInteresados @(Model.ProfesoresInteresados == 1 ? "profesor" : "profesores")</span>
+                }
+                @if (administradores > 0)
+                {
+                    <span class="etiqueta">🛡 @administradores @(administradores == 1 ? "administrador" : "administradores")</span>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@if (total == 0)
+{
+    <div class="vacio">
+        <div class="vacio-icono">📭</div>
+        <h5>Todavía nadie ha respondido</h5>
+        <p class="mb-0">Cuando alguien muestre interés en este evento aparecerá aquí, y recibirás una notificación.</p>
+    </div>
+}
+else
+{
+    <div class="pills mb-3">
+        <a asp-action="Interesados" asp-route-id="@e.Id" class="pill @(Model.Filtro == null ? "activa" : "")">Todos <span>@total</span></a>
+        <a asp-action="Interesados" asp-route-id="@e.Id" asp-route-filtro="Si" class="pill @(Model.Filtro == "Si" ? "activa" : "")">Sí <span>@Model.TotalSi</span></a>
+        <a asp-action="Interesados" asp-route-id="@e.Id" asp-route-filtro="TalVez" class="pill @(Model.Filtro == "TalVez" ? "activa" : "")">Tal vez <span>@Model.TotalTalVez</span></a>
+        <a asp-action="Interesados" asp-route-id="@e.Id" asp-route-filtro="No" class="pill @(Model.Filtro == "No" ? "activa" : "")">No <span>@Model.TotalNo</span></a>
+    </div>
+
+    @if (!Model.Respuestas.Any())
+    {
+        <div class="alert alert-info">No hay respuestas con este filtro.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>Persona</th>
+                        <th>Rol</th>
+                        <th>Carrera / Departamento</th>
+                        <th>Respuesta</th>
+                        <th>Fecha</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var i in Model.Respuestas)
+                    {
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="avatar-mini">@Iniciales(i.Usuario?.NombreCompleto)</div>
+                                    <div class="lh-sm">
+                                        <div class="fw-semibold">@i.Usuario?.NombreCompleto</div>
+                                        <small class="text-muted">@i.Usuario?.CorreoInstitucional</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="badge bg-secondary">@i.Usuario?.Rol</span></td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(i.Usuario?.Carrera))
+                                {
+                                    <div>@i.Usuario.Carrera</div>
+                                }
+                                <small class="text-muted">@i.Usuario?.Departamento</small>
+                            </td>
+                            <td><span class="estado estado-@(i.Respuesta.ToLower())">@Texto(i.Respuesta)</span></td>
+                            <td class="text-nowrap">@i.FechaRespuesta.ToString("dd/MM/yyyy")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+}

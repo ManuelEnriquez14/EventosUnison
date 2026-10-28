@@ -1,0 +1,60 @@
+﻿@model EventosUnison.Models.ViewModels.LoginViewModel
+@{
+    ViewData["Title"] = "Iniciar sesión";
+}
+
+<div class="auth-wrap">
+    <aside class="auth-brand">
+        <img src="~/img/logo-unison.png" alt="Escudo de la Universidad de Sonora" class="auth-logo" />
+        <h2>Bienvenido de vuelta</h2>
+        <p>Eventos, proyectos y puntos Culturest de la comunidad universitaria.</p>
+        <ul class="auth-lista">
+            <li>📅 Eventos académicos, tecnológicos y culturales</li>
+            <li>🧪 Proyectos de alumnos y profesores</li>
+            <li>🔔 Avisos cuando alguien reacciona a tu evento</li>
+        </ul>
+    </aside>
+
+    <section class="auth-card">
+        <h1 class="auth-titulo">Iniciar sesión</h1>
+        <p class="auth-sub">Ingresa con tu correo institucional.</p>
+
+        @if (TempData["Exito"] != null)
+        {
+            <div class="alert alert-success">@TempData["Exito"]</div>
+        }
+
+        <form asp-action="Login" asp-route-returnUrl="@ViewBag.ReturnUrl" method="post">
+            <div asp-validation-summary="ModelOnly"></div>
+
+            <div class="mb-3">
+                <label asp-for="CorreoInstitucional" class="form-label"></label>
+                <div class="input-group input-futurista">
+                    <span class="input-group-text" aria-hidden="true">✉</span>
+                    <input asp-for="CorreoInstitucional" class="form-control" placeholder="usuario@unison.mx" autocomplete="username" />
+                </div>
+                <span asp-validation-for="CorreoInstitucional" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-4">
+                <label asp-for="Password" class="form-label"></label>
+                <div class="input-group input-futurista">
+                    <span class="input-group-text" aria-hidden="true">🔒</span>
+                    <input asp-for="Password" class="form-control" autocomplete="current-password" />
+                    <button type="button" class="btn-ver" data-toggle-password aria-label="Mostrar u ocultar contraseña">👁</button>
+                </div>
+                <span asp-validation-for="Password" class="text-danger small"></span>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg w-100">Entrar</button>
+        </form>
+
+        <p class="auth-pie">
+            ¿No tienes cuenta? <a asp-action="Registro">Crear una cuenta</a>
+        </p>
+    </section>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

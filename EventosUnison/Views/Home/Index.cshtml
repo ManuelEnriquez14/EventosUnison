@@ -1,0 +1,13 @@
+﻿@{
+    ViewData["Title"] = "Inicio";
+}
+
+@if (User.Identity?.IsAuthenticated == true)
+{
+    <partial name="_Panel" />
+}
+else
+{
+    <partial name="_Landing" />
+}
+}

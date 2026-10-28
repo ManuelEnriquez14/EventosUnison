@@ -1,0 +1,149 @@
+﻿@model EventosUnison.Models.ViewModels.AdminPanelViewModel
+@{
+    ViewData["Title"] = "Panel de administrador";
+
+    var confirmados = Model.Procesados.Count(e => e.Estado == "Confirmado");
+    var rechazados = Model.Procesados.Count(e => e.Estado == "Rechazado");
+
+    string Iniciales(string? nombre) => string.Concat(
+        (nombre ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(p => char.ToUpperInvariant(p[0])));
+}
+
+@if (TempData["Exito"] != null)
+{
+    <div class="alert alert-success">@TempData["Exito"]</div>
+}
+
+<div class="row g-3">
+    <div class="col-md-4">
+        <div class="card stat stat-oro">
+            <div class="card-body">
+                <div class="stat-num">@Model.Pendientes.Count</div>
+                <div class="stat-label">Propuestas pendientes</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat stat-verde">
+            <div class="card-body">
+                <div class="stat-num">@confirmados</div>
+                <div class="stat-label">Eventos confirmados</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat stat-rojo">
+            <div class="card-body">
+                <div class="stat-num">@rechazados</div>
+                <div class="stat-label">Eventos rechazados</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h4 class="seccion-sub">
+    Propuestas pendientes
+    <span class="badge bg-warning text-dark">@Model.Pendientes.Count</span>
+</h4>
+
+@if (!Model.Pendientes.Any())
+{
+    <div class="vacio">
+        <div class="vacio-icono">🎉</div>
+        <h5>Todo al día</h5>
+        <p class="mb-0">No hay propuestas esperando revisión.</p>
+    </div>
+}
+else
+{
+    <div class="row g-3">
+        @foreach (var e in Model.Pendientes)
+        {
+            <div class="col-12">
+                <article class="card">
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-lg-8">
+                                <partial name="_EventoInfo" model="e" />
+                            </div>
+
+                            <div class="col-lg-4">
+                                <div class="proponente">
+                                    <div class="small text-muted mb-2">Propuesto por</div>
+                                    <div class="d-flex align-items-center gap-2 mb-3">
+                                        <div class="avatar-mini">@Iniciales(e.OrganizadorUsuario?.NombreCompleto)</div>
+                                        <div class="lh-sm">
+                                            <div class="fw-semibold">@e.OrganizadorUsuario?.NombreCompleto</div>
+                                            <span class="badge bg-secondary">@e.OrganizadorUsuario?.Rol</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-grid gap-2">
+                                        <form asp-action="CambiarEstado" method="post">
+                                            <input type="hidden" name="id" value="@e.Id" />
+                                            <input type="hidden" name="estado" value="Confirmado" />
+                                            <button class="btn btn-success w-100">✔ Confirmar</button>
+                                        </form>
+                                        <form asp-action="CambiarEstado" method="post"
+                                              onsubmit="return confirm('¿Rechazar este evento?');">
+                                            <input type="hidden" name="id" value="@e.Id" />
+                                            <input type="hidden" name="estado" value="Rechazado" />
+                                            <button class="btn btn-outline-danger w-100">✖ Rechazar</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+            </div>
+        }
+    </div>
+}
+
+<h4 class="seccion-sub">Eventos revisados</h4>
+
+@if (!Model.Procesados.Any())
+{
+    <p class="text-muted">Todavía no has revisado ningún evento.</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-sm align-middle">
+            <thead>
+                <tr>
+                    <th>Evento</th>
+                    <th>Fecha</th>
+                    <th>Propuesto por</th>
+                    <th>Estado</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var e in Model.Procesados)
+                {
+                    var confirmado = e.Estado == "Confirmado";
+                    <tr>
+                        <td><strong>@e.Nombre</strong></td>
+                        <td>@e.FechaHora.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>@e.OrganizadorUsuario?.NombreCompleto</td>
+                        <td><span class="estado estado-@(e.Estado.ToLower())">@e.Estado</span></td>
+                        <td class="text-nowrap text-end">
+                            @if (confirmado)
+                            {
+                                <a asp-controller="Eventos" asp-action="Interesados" asp-route-id="@e.Id"
+                                   class="btn btn-outline-primary btn-sm">Ver interesados</a>
+                            }
+                            <form asp-action="CambiarEstado" method="post" class="d-inline">
+                                <input type="hidden" name="id" value="@e.Id" />
+                                <input type="hidden" name="estado" value="@(confirmado ? "Rechazado" : "Confirmado")" />
+                                <button class="btn btn-link btn-sm">@(confirmado ? "Cambiar a rechazado" : "Cambiar a confirmado")</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

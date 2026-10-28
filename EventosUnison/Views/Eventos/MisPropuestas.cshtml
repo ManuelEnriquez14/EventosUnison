@@ -1,0 +1,115 @@
+﻿@model List<EventosUnison.Models.Evento>
+@{
+    ViewData["Title"] = "Mis propuestas";
+    var pendientes = Model.Count(e => e.Estado == "Propuesto");
+    var confirmados = Model.Count(e => e.Estado == "Confirmado");
+    var rechazados = Model.Count(e => e.Estado == "Rechazado");
+}
+
+@if (TempData["Exito"] != null)
+{
+    <div class="alert alert-success">@TempData["Exito"]</div>
+}
+
+<div class="pagina-cab">
+    <p class="text-muted mb-0">Eventos que has propuesto y su estado de revisión.</p>
+    <a asp-action="Proponer" class="btn btn-primary">🚀 Proponer evento</a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="vacio">
+        <div class="vacio-icono">📝</div>
+        <h5>Aún no has propuesto eventos</h5>
+        <p>Cualquier alumno, profesor u organización puede proponer uno. El administrador lo revisa antes de publicarlo.</p>
+        <a asp-action="Proponer" class="btn btn-primary">Proponer mi primer evento</a>
+    </div>
+}
+else
+{
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card stat stat-oro">
+                <div class="card-body">
+                    <div class="stat-num">@pendientes</div>
+                    <div class="stat-label">En revisión</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat stat-verde">
+                <div class="card-body">
+                    <div class="stat-num">@confirmados</div>
+                    <div class="stat-label">Confirmadas</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat stat-rojo">
+                <div class="card-body">
+                    <div class="stat-num">@rechazados</div>
+                    <div class="stat-label">Rechazadas</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="btn-group btn-group-sm mb-3" role="group">
+        <button type="button" class="btn btn-dark" data-filtro="">Todas</button>
+        <button type="button" class="btn btn-outline-dark" data-filtro="Propuesto">En revisión</button>
+        <button type="button" class="btn btn-outline-dark" data-filtro="Confirmado">Confirmadas</button>
+        <button type="button" class="btn btn-outline-dark" data-filtro="Rechazado">Rechazadas</button>
+    </div>
+
+    <div class="row g-3">
+        @foreach (var e in Model)
+        {
+            <div class="col-12 fila-estado" data-estado="@e.Estado">
+                <article class="card">
+                    <div class="card-body">
+                        <div class="row g-3 align-items-center">
+                            <div class="col-lg-8">
+                                <partial name="_EventoInfo" model="e" />
+                            </div>
+                            <div class="col-lg-4 text-lg-end">
+                                <span class="estado estado-@(e.Estado.ToLower())">@e.Estado</span>
+
+                                @if (e.Estado == "Confirmado")
+                                {
+                                    <div class="mt-3">
+                                        <a asp-action="Interesados" asp-route-id="@e.Id" class="btn btn-outline-primary btn-sm">Ver interesados</a>
+                                    </div>
+                                }
+                                else if (e.Estado == "Propuesto")
+                                {
+                                    <p class="small text-muted mt-3 mb-0">Esperando la revisión del administrador.</p>
+                                }
+                                else
+                                {
+                                    <p class="small text-muted mt-3 mb-0">El administrador no aprobó esta propuesta.</p>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </article>
+            </div>
+        }
+    </div>
+}
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('[data-filtro]').forEach(function (boton) {
+            boton.addEventListener('click', function () {
+                const filtro = boton.dataset.filtro;
+                document.querySelectorAll('[data-filtro]').forEach(function (b) {
+                    b.classList.toggle('btn-dark', b === boton);
+                    b.classList.toggle('btn-outline-dark', b !== boton);
+                });
+                document.querySelectorAll('.fila-estado').forEach(function (fila) {
+                    fila.hidden = filtro !== '' && fila.dataset.estado !== filtro;
+                });
+            });
+        });
+    </script>
+}

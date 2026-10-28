@@ -1,0 +1,50 @@
+﻿@model List<EventosUnison.Models.Notificacion>
+@{
+    string TextoRespuesta(string? r) => r switch
+    {
+        "Si" => "Sí",
+        "TalVez" => "Tal vez",
+        _ => "No"
+    };
+}
+
+<div class="notif-cabecera d-flex justify-content-between align-items-center px-3 py-2">
+    <strong>Notificaciones</strong>
+    <a asp-controller="Notificaciones" asp-action="Index" class="small">Ver todas</a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="p-4 text-center text-muted small">No tienes notificaciones por ahora.</div>
+}
+else
+{
+    <div class="notif-lista">
+        @foreach (var n in Model)
+        {
+            var destino = n.Tipo == "Estado"
+                ? Url.Action("MisPropuestas", "Eventos")
+                : Url.Action("Interesados", "Eventos", new { id = n.EventoId });
+            var icono = n.Tipo == "Interes" ? "⭐" : n.Tipo == "Registro" ? "✅" : "📢";
+
+            <a href="@destino" class="notif-item @(n.Leida ? "" : "nueva")">
+                <span class="notif-icono">@icono</span>
+                <span class="notif-texto">
+                    @if (n.Tipo == "Interes")
+                    {
+                        <span><strong>@n.Actor?.NombreCompleto</strong> respondió <strong>@TextoRespuesta(n.Detalle)</strong> a <em>@n.Evento?.Nombre</em></span>
+                    }
+                    else if (n.Tipo == "Registro")
+                    {
+                        <span><strong>@n.Actor?.NombreCompleto</strong> se registró en <em>@n.Evento?.Nombre</em></span>
+                    }
+                    else
+                    {
+                        <span>Tu evento <em>@n.Evento?.Nombre</em> fue <strong>@(n.Detalle == "Confirmado" ? "confirmado" : "rechazado")</strong></span>
+                    }
+                    <small class="d-block text-muted">@n.Fecha.ToString("dd/MM HH:mm")</small>
+                </span>
+            </a>
+        }
+    </div>
+}

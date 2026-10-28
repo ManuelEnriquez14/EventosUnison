@@ -1,0 +1,77 @@
+﻿@model List<EventosUnison.Models.Notificacion>
+@{
+    ViewData["Title"] = "Notificaciones";
+
+    string TextoRespuesta(string? r) => r switch
+    {
+        "Si" => "Sí",
+        "TalVez" => "Tal vez",
+        _ => "No"
+    };
+}
+
+<h2 class="mb-3">Notificaciones</h2>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">No tienes notificaciones por ahora.</div>
+}
+else
+{
+    <div class="list-group">
+        @foreach (var n in Model)
+        {
+            var clase = n.Leida ? "" : "list-group-item-warning";
+            var datosActor = n.Actor == null
+                ? ""
+                : n.Actor.Rol + (n.Actor.Carrera != null ? ", " + n.Actor.Carrera : "");
+
+            <div class="list-group-item @clase">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        @if (n.Tipo == "Interes")
+                        {
+                            <span>
+                                <span class="badge bg-primary">Interés</span>
+                                <strong>@n.Actor?.NombreCompleto</strong>
+                                <span class="text-muted">(@datosActor)</span>
+                                respondió <strong>@TextoRespuesta(n.Detalle)</strong> a tu evento
+                                <strong>@n.Evento?.Nombre</strong>.
+                            </span>
+                        }
+                        else if (n.Tipo == "Registro")
+                        {
+                            <span>
+                                <span class="badge bg-success">Registro</span>
+                                <strong>@n.Actor?.NombreCompleto</strong>
+                                <span class="text-muted">(@datosActor)</span>
+                                se registró en tu evento <strong>@n.Evento?.Nombre</strong>.
+                            </span>
+                        }
+                        else
+                        {
+                            <span>
+                                <span class="badge @(n.Detalle == "Confirmado" ? "bg-success" : "bg-danger")">Revisión</span>
+                                Tu evento <strong>@n.Evento?.Nombre</strong> fue
+                                <strong>@(n.Detalle == "Confirmado" ? "confirmado" : "rechazado")</strong>
+                                por el administrador.
+                            </span>
+                        }
+                    </div>
+                    <small class="text-muted text-nowrap ms-3">@n.Fecha.ToString("dd/MM/yyyy HH:mm")</small>
+                </div>
+
+                <div class="mt-1">
+                    @if (n.Tipo == "Estado")
+                    {
+                        <a asp-controller="Eventos" asp-action="MisPropuestas" class="small">Ver mis propuestas</a>
+                    }
+                    else
+                    {
+                        <a asp-controller="Eventos" asp-action="Interesados" asp-route-id="@n.EventoId" class="small">Ver interesados del evento</a>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}

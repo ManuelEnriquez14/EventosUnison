@@ -1,0 +1,119 @@
+﻿@model EventosUnison.Models.ViewModels.PublicarProyectoViewModel
+@{
+    ViewData["Title"] = "Publicar proyecto";
+}
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body p-4">
+                <form asp-action="Publicar" method="post" enctype="multipart/form-data">
+                    <div asp-validation-summary="ModelOnly"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Nombre" class="form-label"></label>
+                        <div class="input-group input-futurista">
+                            <span class="input-group-text" aria-hidden="true">🧪</span>
+                            <input asp-for="Nombre" class="form-control" />
+                        </div>
+                        <span asp-validation-for="Nombre" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Descripcion" class="form-label"></label>
+                        <textarea asp-for="Descripcion" class="form-control" rows="5"
+                                  data-contador="descContador" data-max="1000"></textarea>
+                        <div class="d-flex justify-content-between">
+                            <span asp-validation-for="Descripcion" class="text-danger small"></span>
+                            <small class="text-muted ms-auto" id="descContador"></small>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Responsable</label>
+                            <div class="input-group input-futurista">
+                                <span class="input-group-text" aria-hidden="true">👤</span>
+                                <input class="form-control" value="@ViewBag.Responsable" disabled />
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Fecha de publicación</label>
+                            <div class="input-group input-futurista">
+                                <span class="input-group-text" aria-hidden="true">📅</span>
+                                <input class="form-control" value="@DateTime.Now.ToString("dd/MM/yyyy")" disabled />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Carrera" class="form-label"></label>
+                            <div class="input-group input-futurista">
+                                <span class="input-group-text" aria-hidden="true">📚</span>
+                                <input asp-for="Carrera" class="form-control" />
+                            </div>
+                            <span asp-validation-for="Carrera" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Departamento" class="form-label"></label>
+                            <div class="input-group input-futurista">
+                                <span class="input-group-text" aria-hidden="true">🏛</span>
+                                <input asp-for="Departamento" class="form-control" />
+                            </div>
+                            <span asp-validation-for="Departamento" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="Archivo" class="form-label"></label>
+                        <input asp-for="Archivo" type="file" class="form-control"
+                               accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.png,.jpg,.jpeg" />
+                        <div id="archivoAviso" class="form-text">PDF, Word, PowerPoint, Excel, ZIP o imagen. Máximo 10 MB.</div>
+                        <span asp-validation-for="Archivo" class="text-danger small"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Publicar proyecto</button>
+                    <a asp-action="Index" class="btn btn-outline-secondary">Cancelar</a>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="mb-3">Antes de publicar</h5>
+                <ul class="text-muted small ps-3 mb-0">
+                    <li class="mb-2">Tu nombre aparecerá como responsable del proyecto.</li>
+                    <li class="mb-2">Todos los usuarios con sesión podrán ver el proyecto y descargar el archivo.</li>
+                    <li class="mb-2">Adjuntar un archivo es opcional: puede ser el reporte, la presentación o el código en ZIP.</li>
+                    <li>La fecha de publicación se registra automáticamente.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        const archivo = document.getElementById('Archivo');
+        const aviso = document.getElementById('archivoAviso');
+        const textoOriginal = aviso.textContent;
+
+        archivo.addEventListener('change', function () {
+            const f = archivo.files[0];
+            if (!f) { aviso.className = 'form-text'; aviso.textContent = textoOriginal; return; }
+
+            if (f.size > 10 * 1024 * 1024) {
+                aviso.className = 'form-text text-warning';
+                aviso.textContent = '⚠ El archivo pesa más de 10 MB. Elige uno más ligero.';
+                archivo.value = '';
+                return;
+            }
+            aviso.className = 'form-text text-success';
+            aviso.textContent = '📎 ' + f.name + ' (' + (f.size / 1048576).toFixed(2) + ' MB)';
+        });
+    </script>
+}

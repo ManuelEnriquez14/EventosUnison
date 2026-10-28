@@ -1,0 +1,121 @@
+﻿@using System.Security.Claims
+@{
+    var autenticado = User.Identity?.IsAuthenticated == true;
+    var rol = User.FindFirstValue(ClaimTypes.Role);
+    var nombre = User.Identity?.Name ?? "";
+    var iniciales = string.Concat(
+        nombre.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(p => char.ToUpperInvariant(p[0])));
+
+    var controlador = ViewContext.RouteData.Values["controller"]?.ToString();
+    var accion = ViewContext.RouteData.Values["action"]?.ToString();
+    string Activo(string c, string a) => controlador == c && accion == a ? "active" : "";
+}
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="dark">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Eventos UNISON</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/EventosUnison.styles.css" asp-append-version="true" />
+</head>
+<body class="@(autenticado ? "con-sidebar" : "")">
+
+    @if (autenticado)
+    {
+        <div class="sidebar-fondo" id="sidebarFondo"></div>
+
+        <aside class="sidebar" id="sidebar">
+            <a class="sidebar-marca" asp-controller="Home" asp-action="Index">
+                <img src="~/img/logo-unison.png" alt="" class="brand-logo" onerror="this.style.display='none'" />
+                <span>Eventos <span class="text-gradient">UNISON</span></span>
+            </a>
+
+            <nav class="sidebar-nav">
+                <div class="nav-grupo">Eventos</div>
+                <a class="nav-lateral @Activo("Eventos", "Index")" asp-controller="Eventos" asp-action="Index"><span class="nav-icono">📅</span> Ver eventos</a>
+                <a class="nav-lateral @Activo("Eventos", "Proponer")" asp-controller="Eventos" asp-action="Proponer"><span class="nav-icono">🚀</span> Proponer evento</a>
+                <a class="nav-lateral @Activo("Eventos", "MisPropuestas")" asp-controller="Eventos" asp-action="MisPropuestas"><span class="nav-icono">📝</span> Mis propuestas</a>
+                <a class="nav-lateral @Activo("Eventos", "MisRegistros")" asp-controller="Eventos" asp-action="MisRegistros"><span class="nav-icono">✅</span> Mis registros</a>
+
+                <div class="nav-grupo">Proyectos</div>
+                <a class="nav-lateral @Activo("Proyectos", "Index")" asp-controller="Proyectos" asp-action="Index"><span class="nav-icono">🧪</span> Ver proyectos</a>
+                <a class="nav-lateral @Activo("Proyectos", "Publicar")" asp-controller="Proyectos" asp-action="Publicar"><span class="nav-icono">➕</span> Publicar proyecto</a>
+
+                @if (rol == "Administrador")
+                {
+                    <div class="nav-grupo">Administración</div>
+                    <a class="nav-lateral @Activo("Admin", "Index")" asp-controller="Admin" asp-action="Index"><span class="nav-icono">🛡</span> Panel de administrador</a>
+                }
+            </nav>
+
+            <div class="sidebar-usuario">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <div class="avatar-mini">@iniciales</div>
+                    <div class="lh-sm">
+                        <div class="fw-semibold">@nombre</div>
+                        <span class="badge bg-secondary">@rol</span>
+                    </div>
+                </div>
+                <form asp-controller="Cuenta" asp-action="Logout" method="post">
+                    <button type="submit" class="btn btn-outline-primary btn-sm w-100">Cerrar sesión</button>
+                </form>
+            </div>
+        </aside>
+    }
+
+    <div class="app-wrap">
+        @if (autenticado)
+        {
+            <header class="topbar">
+                <button class="btn-menu d-lg-none" id="btnMenu" type="button" aria-label="Abrir menú">☰</button>
+                <h1 class="topbar-titulo">@ViewData["Title"]</h1>
+                <div class="ms-auto">
+                    @await Component.InvokeAsync("Notificaciones")
+                </div>
+            </header>
+        }
+        else
+        {
+            <header>
+                <nav class="navbar navbar-expand-lg nav-futurista">
+                    <div class="container-fluid px-lg-4">
+                        <a class="navbar-brand d-flex align-items-center" asp-controller="Home" asp-action="Index">
+                            <img src="~/img/logo-unison.png" alt="" class="brand-logo" onerror="this.style.display='none'" />
+                            <span>Eventos <span class="text-gradient">UNISON</span></span>
+                        </a>
+                        <ul class="navbar-nav ms-auto flex-row align-items-center gap-3">
+                            <li class="nav-item"><a class="nav-link" asp-controller="Cuenta" asp-action="Login">Iniciar sesión</a></li>
+                            <li class="nav-item"><a class="btn btn-primary btn-sm" asp-controller="Cuenta" asp-action="Registro">Crear cuenta</a></li>
+                        </ul>
+                    </div>
+                </nav>
+            </header>
+        }
+
+        <div class="@(autenticado ? "contenido-app" : "container")">
+            <main role="main">
+                @RenderBody()
+            </main>
+        </div>
+
+        <footer class="site-footer">
+            <div class="container-fluid px-lg-4 d-flex flex-wrap justify-content-between gap-2">
+                <span>© @DateTime.Now.Year Eventos UNISON · Universidad de Sonora</span>
+                <span>Desarrollado por Manuel Enriquez Grijalva</span>
+            </div>
+        </footer>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

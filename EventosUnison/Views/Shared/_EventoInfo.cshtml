@@ -1,0 +1,26 @@
+﻿@using System.Globalization
+@model EventosUnison.Models.Evento
+@{
+    var es = CultureInfo.GetCultureInfo("es-MX");
+}
+
+<div class="d-flex gap-3">
+    <div class="fecha-bloque">
+        <span class="fecha-dia">@Model.FechaHora.Day</span>
+        <span class="fecha-mes">@Model.FechaHora.ToString("MMM", es).TrimEnd('.').ToUpper(es)</span>
+    </div>
+
+    <div class="flex-grow-1">
+        <div class="d-flex justify-content-between gap-2">
+            <h5 class="mb-1">@Model.Nombre</h5>
+            <span class="badge badge-puntos align-self-start text-nowrap">+@Model.PuntosCulturest pts</span>
+        </div>
+        <p class="text-muted small mb-2">@Model.Descripcion</p>
+        <ul class="evento-meta list-unstyled small mb-0">
+            <li class="cap">🕒 @Model.FechaHora.ToString("dddd HH:mm", es)</li>
+            <li>📍 @Model.Lugar</li>
+            <li>👤 @Model.Organizador</li>
+            <li>🏛 @Model.Departamento</li>
+        </ul>
+    </div>
+</div>

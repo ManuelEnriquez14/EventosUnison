@@ -1,0 +1,79 @@
+﻿@model List<EventosUnison.Models.RegistroEvento>
+@{
+    ViewData["Title"] = "Mis registros";
+    var totalPuntos = Model.Sum(r => r.Evento?.PuntosCulturest ?? 0);
+    var proximos = Model.Count(r => r.Evento != null && r.Evento.FechaHora >= DateTime.Now);
+}
+
+@if (TempData["Exito"] != null)
+{
+    <div class="alert alert-success">@TempData["Exito"]</div>
+}
+
+<div class="pagina-cab">
+    <p class="text-muted mb-0">Los eventos en los que te has registrado.</p>
+    <a asp-action="Index" class="btn btn-primary">📅 Ver eventos</a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="vacio">
+        <div class="vacio-icono">✅</div>
+        <h5>Todavía no te has registrado en ningún evento</h5>
+        <p>Explora los eventos disponibles y regístrate en los que te interesen.</p>
+        <a asp-action="Index" class="btn btn-primary">Explorar eventos</a>
+    </div>
+}
+else
+{
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card stat stat-cian">
+                <div class="card-body">
+                    <div class="stat-num">@Model.Count</div>
+                    <div class="stat-label">Eventos registrados</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat stat-verde">
+                <div class="card-body">
+                    <div class="stat-num">@proximos</div>
+                    <div class="stat-label">Próximos</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat stat-oro">
+                <div class="card-body">
+                    <div class="stat-num">@totalPuntos</div>
+                    <div class="stat-label">Puntos Culturest (suma de tus registros)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        @foreach (var r in Model)
+        {
+            if (r.Evento == null) { continue; }
+            var proximo = r.Evento.FechaHora >= DateTime.Now;
+
+            <div class="col-12">
+                <article class="card">
+                    <div class="card-body">
+                        <div class="row g-3 align-items-center">
+                            <div class="col-lg-8">
+                                <partial name="_EventoInfo" model="r.Evento" />
+                            </div>
+                            <div class="col-lg-4 text-lg-end">
+                                <span class="estado @(proximo ? "estado-proximo" : "estado-realizado")">@(proximo ? "Próximo" : "Realizado")</span>
+                                <p class="small text-muted mt-3 mb-0">Te registraste el @r.FechaRegistro.ToString("dd/MM/yyyy")</p>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+            </div>
+        }
+    </div>
+}

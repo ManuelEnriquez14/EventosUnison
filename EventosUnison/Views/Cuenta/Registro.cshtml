@@ -1,0 +1,156 @@
+﻿@model EventosUnison.Models.ViewModels.RegistroViewModel
+@{
+    ViewData["Title"] = "Crear cuenta";
+}
+
+<div class="auth-wrap">
+    <aside class="auth-brand">
+        <img src="~/img/logo-unison.png" alt="Escudo de la Universidad de Sonora" class="auth-logo" />
+        <h2>Únete a la comunidad</h2>
+        <p>Crea tu cuenta y empieza a participar en los eventos de la universidad.</p>
+        <ul class="auth-lista">
+            <li>✅ Registra tu interés en los eventos</li>
+            <li>🚀 Propón tus propias actividades</li>
+            <li>🏆 Lleva el control de tus puntos Culturest</li>
+        </ul>
+    </aside>
+
+    <section class="auth-card">
+        <h1 class="auth-titulo">Crear cuenta</h1>
+        <p class="auth-sub">Solo toma un minuto.</p>
+
+        <form asp-action="Registro" method="post">
+            <div asp-validation-summary="ModelOnly"></div>
+
+            <div class="mb-3">
+                <label asp-for="NombreCompleto" class="form-label"></label>
+                <div class="input-group input-futurista">
+                    <span class="input-group-text" aria-hidden="true">👤</span>
+                    <input asp-for="NombreCompleto" class="form-control" autocomplete="name" />
+                </div>
+                <span asp-validation-for="NombreCompleto" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="CorreoInstitucional" class="form-label"></label>
+                <div class="input-group input-futurista">
+                    <span class="input-group-text" aria-hidden="true">✉</span>
+                    <input asp-for="CorreoInstitucional" class="form-control" placeholder="usuario@unison.mx" autocomplete="username" />
+                </div>
+                <span asp-validation-for="CorreoInstitucional" class="text-danger small"></span>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="Password" class="form-label"></label>
+                    <div class="input-group input-futurista">
+                        <span class="input-group-text" aria-hidden="true">🔒</span>
+                        <input asp-for="Password" class="form-control" autocomplete="new-password" />
+                        <button type="button" class="btn-ver" data-toggle-password aria-label="Mostrar u ocultar contraseña">👁</button>
+                    </div>
+                    <div class="fuerza"><div class="fuerza-barra" id="fuerzaBarra"></div></div>
+                    <small id="fuerzaTexto" class="text-muted"></small>
+                    <span asp-validation-for="Password" class="text-danger small d-block"></span>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label asp-for="ConfirmarPassword" class="form-label"></label>
+                    <div class="input-group input-futurista">
+                        <span class="input-group-text" aria-hidden="true">🔒</span>
+                        <input asp-for="ConfirmarPassword" class="form-control" autocomplete="new-password" />
+                        <button type="button" class="btn-ver" data-toggle-password aria-label="Mostrar u ocultar contraseña">👁</button>
+                    </div>
+                    <span asp-validation-for="ConfirmarPassword" class="text-danger small"></span>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Soy...</label>
+                <div class="rol-opciones">
+                    <div class="rol-opcion">
+                        <input type="radio" asp-for="Rol" value="Alumno" id="rolAlumno" />
+                        <label for="rolAlumno">
+                            <span class="rol-icono" aria-hidden="true">🎓</span>
+                            <strong>Alumno</strong>
+                        </label>
+                    </div>
+                    <div class="rol-opcion">
+                        <input type="radio" asp-for="Rol" value="Profesor" id="rolProfesor" />
+                        <label for="rolProfesor">
+                            <span class="rol-icono" aria-hidden="true">👨‍🏫</span>
+                            <strong>Profesor</strong>
+                        </label>
+                    </div>
+                </div>
+                <span asp-validation-for="Rol" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Departamento" class="form-label"></label>
+                <div class="input-group input-futurista">
+                    <span class="input-group-text" aria-hidden="true">🏛</span>
+                    <input asp-for="Departamento" class="form-control" />
+                </div>
+                <span asp-validation-for="Departamento" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-4" id="campoCarrera">
+                <label asp-for="Carrera" class="form-label"></label>
+                <div class="input-group input-futurista">
+                    <span class="input-group-text" aria-hidden="true">📚</span>
+                    <input asp-for="Carrera" class="form-control" />
+                </div>
+                <span asp-validation-for="Carrera" class="text-danger small"></span>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg w-100">Crear mi cuenta</button>
+        </form>
+
+        <p class="auth-pie">
+            ¿Ya tienes cuenta? <a asp-action="Login">Iniciar sesión</a>
+        </p>
+    </section>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            // Mostrar la carrera solo si el rol es Alumno
+            const campoCarrera = document.getElementById('campoCarrera');
+            function actualizarRol() {
+                const rol = document.querySelector('input[name="Rol"]:checked');
+                campoCarrera.hidden = !(rol && rol.value === 'Alumno');
+            }
+            document.querySelectorAll('input[name="Rol"]').forEach(function (r) {
+                r.addEventListener('change', actualizarRol);
+            });
+            actualizarRol();
+
+            // Barra de seguridad de la contraseña
+            const pass = document.getElementById('Password');
+            const barra = document.getElementById('fuerzaBarra');
+            const texto = document.getElementById('fuerzaTexto');
+            const niveles = [
+                { ancho: 0, color: 'transparent', texto: '' },
+                { ancho: 25, color: '#ff6b6b', texto: 'Débil' },
+                { ancho: 50, color: '#ff9f43', texto: 'Regular' },
+                { ancho: 75, color: '#f5b82e', texto: 'Buena' },
+                { ancho: 100, color: '#2ecc71', texto: 'Fuerte' }
+            ];
+            pass.addEventListener('input', function () {
+                const v = pass.value;
+                let puntos = 0;
+                if (v.length >= 6) puntos++;
+                if (v.length >= 10) puntos++;
+                if (/[a-z]/.test(v) && /[A-Z]/.test(v)) puntos++;
+                if (/\d/.test(v) && /[^A-Za-z0-9]/.test(v)) puntos++;
+
+                const n = v.length === 0 ? niveles[0] : niveles[Math.max(1, puntos)];
+                barra.style.width = n.ancho + '%';
+                barra.style.background = n.color;
+                texto.textContent = n.texto ? 'Seguridad: ' + n.texto : '';
+            });
+        })();
+    </script>
+}
