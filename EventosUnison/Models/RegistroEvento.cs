@@ -8,4 +8,6 @@ public class RegistroEvento
     public int EventoId { get; set; }
     public Evento? Evento { get; set; }
     public DateTime FechaRegistro { get; set; } = DateTime.Now;
+
+    public bool? Asistio { get; set; }
 }

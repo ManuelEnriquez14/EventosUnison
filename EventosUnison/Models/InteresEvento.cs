@@ -9,4 +9,6 @@ public class InteresEvento
     public Evento? Evento { get; set; }
     public string Respuesta { get; set; } = RespuestasInteres.Si;
     public DateTime FechaRespuesta { get; set; } = DateTime.Now;
+
+    public bool? Asistio { get; set; }
 }

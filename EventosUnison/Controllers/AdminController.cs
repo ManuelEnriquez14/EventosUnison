@@ -65,4 +65,68 @@ public class AdminController : Controller
 
         return RedirectToAction(nameof(Index));
     }
+
+    [HttpGet]
+    public async Task<IActionResult> Asistencia(int id)
+    {
+        var evento = await _db.Eventos.FirstOrDefaultAsync(e => e.Id == id);
+        if (evento == null) return NotFound();
+
+        // 1. Obtener registrados
+        var registrados = await _db.RegistroEventos
+            .Include(r => r.Usuario)
+            .Where(r => r.EventoId == id)
+            .OrderBy(r => r.Usuario!.NombreCompleto)
+            .ToListAsync();
+
+        var registradosIds = registrados.Select(r => r.UsuarioId).ToList();
+
+        // 2. Obtener interesados (Solo Sí y Tal Vez, omitiendo a los ya registrados)
+        var interesados = await _db.InteresEventos
+            .Include(i => i.Usuario)
+            .Where(i => i.EventoId == id
+                        && (i.Respuesta == "Si" || i.Respuesta == "TalVez")
+                        && !registradosIds.Contains(i.UsuarioId))
+            .OrderBy(i => i.Respuesta) // Saldrán primero los Sí, luego Tal Vez
+            .ThenBy(i => i.Usuario!.NombreCompleto)
+            .ToListAsync();
+
+        var modelo = new AsistenciaViewModel
+        {
+            Evento = evento,
+            Registrados = registrados,
+            Interesados = interesados
+        };
+
+        return View(modelo);
+    }
+
+    // ---------- MARCAR ASISTENCIA ----------
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> MarcarAsistencia(int registroId, int eventoId, bool asistio)
+    {
+        var registro = await _db.RegistroEventos.FindAsync(registroId);
+        if (registro == null) return NotFound();
+
+        registro.Asistio = asistio;
+        await _db.SaveChangesAsync();
+
+        TempData["Exito"] = asistio ? "Se marcó la asistencia correctamente." : "Se marcó la inasistencia.";
+
+        return RedirectToAction(nameof(Asistencia), new { id = eventoId });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> MarcarAsistenciaInteresado(int interesId, int eventoId, bool asistio)
+    {
+        var interes = await _db.InteresEventos.FindAsync(interesId);
+        if (interes == null) return NotFound();
+
+        interes.Asistio = asistio;
+        await _db.SaveChangesAsync();
+
+        TempData["Exito"] = asistio ? "Se marcó la asistencia del interesado." : "Se marcó la inasistencia del interesado.";
+
+        return RedirectToAction(nameof(Asistencia), new { id = eventoId });
+    }
 }

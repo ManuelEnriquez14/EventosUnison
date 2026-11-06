@@ -31,6 +31,8 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+app.UseStatusCodePagesWithReExecute("/Home/NoEncontrado");
+
 app.UseHttpsRedirection();
 app.UseRouting();
 

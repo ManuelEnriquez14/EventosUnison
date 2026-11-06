@@ -1,0 +1,140 @@
+﻿@model EventosUnison.Models.ViewModels.EditarProyectoViewModel
+@{
+    ViewData["Title"] = "Editar proyecto";
+
+    string Tamano(long? bytes)
+    {
+        if (bytes == null) return "";
+        return bytes >= 1024 * 1024
+            ? $"{bytes / 1048576.0:0.0} MB"
+            : $"{Math.Max(1, bytes.Value / 1024)} KB";
+    }
+}
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body p-4">
+                <form asp-action="Editar" method="post" enctype="multipart/form-data">
+                    <div asp-validation-summary="ModelOnly"></div>
+                    <input type="hidden" asp-for="Id" />
+
+                    <div class="mb-3">
+                        <label asp-for="Nombre" class="form-label"></label>
+                        <div class="input-group input-futurista">
+                            <span class="input-group-text" aria-hidden="true">🧪</span>
+                            <input asp-for="Nombre" class="form-control" />
+                        </div>
+                        <span asp-validation-for="Nombre" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Descripcion" class="form-label"></label>
+                        <textarea asp-for="Descripcion" class="form-control" rows="5"
+                                  data-contador="descContador" data-max="1000"></textarea>
+                        <div class="d-flex justify-content-between">
+                            <span asp-validation-for="Descripcion" class="text-danger small"></span>
+                            <small class="text-muted ms-auto" id="descContador"></small>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Responsable</label>
+                            <div class="input-group input-futurista">
+                                <span class="input-group-text" aria-hidden="true">👤</span>
+                                <input class="form-control" value="@ViewBag.Responsable" disabled />
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Fecha de publicación</label>
+                            <div class="input-group input-futurista">
+                                <span class="input-group-text" aria-hidden="true">📅</span>
+                                <input class="form-control" value="@ViewBag.Fecha" disabled />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Carrera" class="form-label"></label>
+                            <div class="input-group input-futurista">
+                                <span class="input-group-text" aria-hidden="true">📚</span>
+                                <input asp-for="Carrera" class="form-control" />
+                            </div>
+                            <span asp-validation-for="Carrera" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Departamento" class="form-label"></label>
+                            <div class="input-group input-futurista">
+                                <span class="input-group-text" aria-hidden="true">🏛</span>
+                                <input asp-for="Departamento" class="form-control" />
+                            </div>
+                            <span asp-validation-for="Departamento" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        @if (!string.IsNullOrEmpty(Model.ArchivoNombre))
+                        {
+                            <div class="proponente mb-3">
+                                <div class="small text-muted mb-1">Archivo actual</div>
+                                <div>📎 @Model.ArchivoNombre <span class="text-muted">(@Tamano(Model.ArchivoTamano))</span></div>
+                                <div class="form-check mt-2">
+                                    <input asp-for="QuitarArchivo" class="form-check-input" />
+                                    <label asp-for="QuitarArchivo" class="form-check-label"></label>
+                                </div>
+                            </div>
+                        }
+
+                        <label asp-for="Archivo" class="form-label"></label>
+                        <input asp-for="Archivo" type="file" class="form-control"
+                               accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.png,.jpg,.jpeg" />
+                        <div id="archivoAviso" class="form-text">PDF, Word, PowerPoint, Excel, ZIP o imagen. Máximo 10 MB.</div>
+                        <span asp-validation-for="Archivo" class="text-danger small"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                    <a asp-action="Index" class="btn btn-outline-secondary">Cancelar</a>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="mb-3">Al editar</h5>
+                <ul class="text-muted small ps-3 mb-0">
+                    <li class="mb-2">Solo tú, como responsable, puedes editar este proyecto.</li>
+                    <li class="mb-2">La fecha de publicación original no cambia.</li>
+                    <li class="mb-2">Si eliges un archivo nuevo, reemplaza al actual.</li>
+                    <li>Puedes quitar el archivo sin subir otro con la casilla «Quitar el archivo actual».</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        const archivo = document.getElementById('Archivo');
+        const aviso = document.getElementById('archivoAviso');
+        const textoOriginal = aviso.textContent;
+
+        archivo.addEventListener('change', function () {
+            const f = archivo.files[0];
+            if (!f) { aviso.className = 'form-text'; aviso.textContent = textoOriginal; return; }
+
+            if (f.size > 10 * 1024 * 1024) {
+                aviso.className = 'form-text text-warning';
+                aviso.textContent = '⚠ El archivo pesa más de 10 MB. Elige uno más ligero.';
+                archivo.value = '';
+                return;
+            }
+            aviso.className = 'form-text text-success';
+            aviso.textContent = '📎 ' + f.name + ' (' + (f.size / 1048576).toFixed(2) + ' MB)';
+        });
+    </script>
+}

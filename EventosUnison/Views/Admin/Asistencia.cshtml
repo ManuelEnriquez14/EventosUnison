@@ -1,0 +1,165 @@
+﻿@model EventosUnison.Models.ViewModels.AsistenciaViewModel
+@{
+    ViewData["Title"] = "Asistencia: " + Model.Evento?.Nombre;
+
+    string Iniciales(string? nombre) => string.Concat(
+            (nombre ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(p => char.ToUpperInvariant(p[0])));
+
+    string TextoRespuesta(string r) => r == "Si" ? "Sí" : "Tal vez";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Pase de lista: @Model.Evento?.Nombre</h2>
+    <a asp-action="Index" class="btn btn-outline-secondary">← Volver al panel</a>
+</div>
+
+<!-- TABLA 1: REGISTRADOS (CON BOTONES) -->
+<div class="card mb-5">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Usuarios Registrados</h5>
+        <span class="badge bg-light text-primary">@Model.Registrados.Count registrados</span>
+    </div>
+    <div class="card-body p-0">
+        @if (!Model.Registrados.Any())
+        {
+            <div class="p-4 text-muted text-center">Nadie se ha registrado a este evento aún.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Usuario</th>
+                            <th>Carrera/Depto</th>
+                            <th>Estatus</th>
+                            <th class="text-end pe-4">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var reg in Model.Registrados)
+                        {
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="avatar-mini">@Iniciales(reg.Usuario?.NombreCompleto)</div>
+                                        <div class="lh-sm">
+                                            <div class="fw-semibold">@reg.Usuario?.NombreCompleto</div>
+                                            <small class="text-muted">@reg.Usuario?.CorreoInstitucional</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div>@reg.Usuario?.Carrera</div>
+                                    <small class="text-muted">@reg.Usuario?.Departamento</small>
+                                </td>
+                                <td>
+                                    @if (reg.Asistio == true)
+                                    {
+                                        <span class="badge bg-success">Asistió</span>
+                                    }
+                                    else if (reg.Asistio == false)
+                                    {
+                                        <span class="badge bg-danger">Faltó</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Sin marcar</span>
+                                    }
+                                </td>
+                                <td class="text-end pe-4">
+                                    <form asp-action="MarcarAsistencia" method="post" class="d-inline">
+                                        <input type="hidden" name="registroId" value="@reg.Id" />
+                                        <input type="hidden" name="eventoId" value="@Model.Evento?.Id" />
+                                        <button type="submit" name="asistio" value="true" class="btn btn-sm btn-outline-success @(reg.Asistio == true ? "active" : "")">
+                                            ✔ Asistió
+                                        </button>
+                                        <button type="submit" name="asistio" value="false" class="btn btn-sm btn-outline-danger @(reg.Asistio == false ? "active" : "")">
+                                            ✖ No asistió
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- TABLA 2: INTERESADOS (SÍ / TAL VEZ) -->
+<div class="card">
+    <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Usuarios Interesados (Sin registro formal)</h5>
+        <span class="badge bg-light text-info">@Model.Interesados.Count interesados</span>
+    </div>
+    <div class="card-body p-0">
+        @if (!Model.Interesados.Any())
+        {
+            <div class="p-4 text-muted text-center">No hay usuarios con interés "Sí" o "Tal vez" que no estén ya registrados.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Usuario</th>
+                            <th>Nivel de interés</th>
+                            <th>Estatus</th>
+                            <th class="text-end pe-4">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var interes in Model.Interesados)
+                        {
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="avatar-mini">@Iniciales(interes.Usuario?.NombreCompleto)</div>
+                                        <div class="lh-sm">
+                                            <div class="fw-semibold">@interes.Usuario?.NombreCompleto</div>
+                                            <small class="text-muted">@interes.Usuario?.CorreoInstitucional</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="estado estado-@(interes.Respuesta.ToLower())">
+                                        @TextoRespuesta(interes.Respuesta)
+                                    </span>
+                                </td>
+                                <td>
+                                    @if (interes.Asistio == true)
+                                    {
+                                        <span class="badge bg-success">Asistió</span>
+                                    }
+                                    else if (interes.Asistio == false)
+                                    {
+                                        <span class="badge bg-danger">Faltó</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Sin marcar</span>
+                                    }
+                                </td>
+                                <td class="text-end pe-4">
+                                    <form asp-action="MarcarAsistenciaInteresado" method="post" class="d-inline">
+                                        <input type="hidden" name="interesId" value="@interes.Id" />
+                                        <input type="hidden" name="eventoId" value="@Model.Evento?.Id" />
+                                        <button type="submit" name="asistio" value="true" class="btn btn-sm btn-outline-success @(interes.Asistio == true ? "active" : "")">
+                                            ✔ Asistió
+                                        </button>
+                                        <button type="submit" name="asistio" value="false" class="btn btn-sm btn-outline-danger @(interes.Asistio == false ? "active" : "")">
+                                            ✖ No asistió
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

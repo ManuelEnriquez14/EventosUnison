@@ -1,6 +1,9 @@
-﻿@model EventosUnison.Models.ViewModels.ProyectosIndexViewModel
+﻿@using System.Security.Claims
+@model EventosUnison.Models.ViewModels.ProyectosIndexViewModel
 @{
     ViewData["Title"] = "Proyectos";
+
+    
 
     string Tamano(long? bytes)
     {
@@ -12,6 +15,8 @@
 
     string Iniciales(string? nombre) => string.Concat(
         (nombre ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(p => char.ToUpperInvariant(p[0])));
+
+    var miId = int.Parse(User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier)!);
 }
 
 @if (TempData["Exito"] != null)
@@ -85,6 +90,10 @@ else
                             <div class="pie-proy d-flex align-items-center gap-2">
                                 <div class="avatar-mini">@Iniciales(p.Usuario?.NombreCompleto)</div>
                                 <div class="lh-sm">
+                                    @if (p.UsuarioId == miId)
+                                    {
+                                        <a asp-action="Editar" asp-route-id="@p.Id" class="btn btn-outline-primary btn-sm ms-auto">Editar</a>
+                                    }
                                     <div class="fw-semibold">@p.Usuario?.NombreCompleto</div>
                                     <small class="text-muted">
                                         <span class="badge bg-secondary">@p.Usuario?.Rol</span>

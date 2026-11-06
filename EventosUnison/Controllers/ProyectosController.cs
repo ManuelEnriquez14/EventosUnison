@@ -165,4 +165,126 @@ public class ProyectosController : Controller
 
         return PhysicalFile(ruta, tipo, proyecto.ArchivoNombre);
     }
+
+    [HttpGet]
+    public async Task<IActionResult> Editar(int id)
+    {
+        var proyecto = await _db.Proyectos.FindAsync(id);
+        if (proyecto == null) return NotFound();                 // → página «recurso no encontrado»
+        if (proyecto.UsuarioId != UsuarioId) return Forbid();    // → «Acceso denegado»
+
+        CargarDatosVista(proyecto);
+        return View(new EditarProyectoViewModel
+        {
+            Id = proyecto.Id,
+            Nombre = proyecto.Nombre,
+            Descripcion = proyecto.Descripcion,
+            Departamento = proyecto.Departamento,
+            Carrera = proyecto.Carrera,
+            ArchivoNombre = proyecto.ArchivoNombre,
+            ArchivoTamano = proyecto.ArchivoTamano
+        });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    [RequestSizeLimit(12 * 1024 * 1024)]
+    public async Task<IActionResult> Editar(EditarProyectoViewModel modelo)
+    {
+        // Se vuelve a buscar y a comprobar el dueño en el servidor: no se confía en lo que envía el formulario
+        var proyecto = await _db.Proyectos.FindAsync(modelo.Id);
+        if (proyecto == null) return NotFound();
+        if (proyecto.UsuarioId != UsuarioId) return Forbid();
+
+        string? extension = null;
+        var hayArchivoNuevo = modelo.Archivo != null && modelo.Archivo.Length > 0;
+
+        if (hayArchivoNuevo)
+        {
+            extension = Path.GetExtension(modelo.Archivo!.FileName).ToLowerInvariant();
+
+            if (!ExtensionesPermitidas.Contains(extension))
+                ModelState.AddModelError(nameof(modelo.Archivo),
+                    "Tipo de archivo no permitido. Usa PDF, Word, PowerPoint, Excel, ZIP o imagen (PNG/JPG).");
+
+            if (modelo.Archivo.Length > TamanoMaximo)
+                ModelState.AddModelError(nameof(modelo.Archivo), "El archivo no puede pesar más de 10 MB.");
+        }
+
+        if (!ModelState.IsValid)
+        {
+            modelo.ArchivoNombre = proyecto.ArchivoNombre;
+            modelo.ArchivoTamano = proyecto.ArchivoTamano;
+            CargarDatosVista(proyecto);
+            return View(modelo);
+        }
+
+        proyecto.Nombre = modelo.Nombre.Trim();
+        proyecto.Descripcion = modelo.Descripcion.Trim();
+        proyecto.Departamento = modelo.Departamento.Trim();
+        proyecto.Carrera = string.IsNullOrWhiteSpace(modelo.Carrera) ? null : modelo.Carrera.Trim();
+
+        var rutaAnterior = proyecto.ArchivoRuta;
+        string? rutaNueva = null;
+
+        if (hayArchivoNuevo)
+        {
+            rutaNueva = await GuardarArchivoAsync(modelo.Archivo!, extension!);
+
+            var nombreOriginal = Path.GetFileName(modelo.Archivo!.FileName);
+            if (nombreOriginal.Length > 255) nombreOriginal = nombreOriginal[^255..];
+
+            proyecto.ArchivoNombre = nombreOriginal;
+            proyecto.ArchivoRuta = rutaNueva;
+            proyecto.ArchivoTamano = modelo.Archivo.Length;
+        }
+        else if (modelo.QuitarArchivo)
+        {
+            proyecto.ArchivoNombre = null;
+            proyecto.ArchivoRuta = null;
+            proyecto.ArchivoTamano = null;
+        }
+
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch
+        {
+            BorrarArchivo(rutaNueva);   // si falla la base de datos, no dejamos el archivo nuevo huérfano
+            throw;
+        }
+
+        // El archivo anterior se borra solo cuando ya no se usa (fue reemplazado o quitado)
+        if (rutaAnterior != null && rutaAnterior != proyecto.ArchivoRuta)
+            BorrarArchivo(rutaAnterior);
+
+        TempData["Exito"] = $"Tu proyecto \"{proyecto.Nombre}\" fue actualizado.";
+        return RedirectToAction(nameof(Index));
+    }
+
+    // ---------- AUXILIARES ----------
+    private void CargarDatosVista(Proyecto proyecto)
+    {
+        ViewBag.Responsable = User.Identity?.Name;
+        ViewBag.Fecha = proyecto.FechaDePublicacion.ToString("dd/MM/yyyy");
+    }
+
+    private async Task<string> GuardarArchivoAsync(IFormFile archivo, string extension)
+    {
+        Directory.CreateDirectory(CarpetaArchivos);
+
+        var nombreGuardado = $"{Guid.NewGuid():N}{extension}";
+        using var stream = new FileStream(Path.Combine(CarpetaArchivos, nombreGuardado), FileMode.Create);
+        await archivo.CopyToAsync(stream);
+
+        return nombreGuardado;
+    }
+
+    private void BorrarArchivo(string? ruta)
+    {
+        if (string.IsNullOrEmpty(ruta)) return;
+
+        var completa = Path.Combine(CarpetaArchivos, ruta);
+        if (System.IO.File.Exists(completa)) System.IO.File.Delete(completa);
+    }
 }
