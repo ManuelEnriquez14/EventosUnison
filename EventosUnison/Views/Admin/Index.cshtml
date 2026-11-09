@@ -130,20 +130,22 @@
                             <td>@e.OrganizadorUsuario?.NombreCompleto</td>
                             <td><span class="estado estado-@(e.Estado.ToLower())">@e.Estado</span></td>
                             <td class="text-nowrap text-end">
+                            <div class="d-inline-flex align-items-center gap-2">
                                 @if (confirmado)
                                 {
-                                    <!-- Botón de asistencia nuevo -->
-                                    <a asp-controller="Admin" asp-action="Asistencia" asp-route-id="@e.Id" 
-                                       class="btn btn-primary btn-sm me-1">📋 Pase de lista</a>
-           
                                     <a asp-controller="Eventos" asp-action="Interesados" asp-route-id="@e.Id"
                                        class="btn btn-outline-primary btn-sm">Ver interesados</a>
+
+                                    <a asp-controller="Admin" asp-action="Asistencia" asp-route-id="@e.Id"
+                                       class="btn btn-outline-primary btn-sm">Pase de lista</a>
                                 }
-                                <form asp-action="CambiarEstado" method="post" class="d-inline ms-1">
+
+                                <form asp-action="CambiarEstado" method="post" class="d-inline">
                                     <input type="hidden" name="id" value="@e.Id" />
                                     <input type="hidden" name="estado" value="@(confirmado ? "Rechazado" : "Confirmado")" />
                                     <button class="btn btn-link btn-sm">@(confirmado ? "Cambiar a rechazado" : "Cambiar a confirmado")</button>
                                 </form>
+                            </div>
                             </td>
                         </tr>
                     }
