@@ -2,8 +2,8 @@
 @model EventosUnison.Models.ViewModels.ProyectosIndexViewModel
 @{
     ViewData["Title"] = "Proyectos";
-
-    
+    var miId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    var puedeOrdenar = Model.Mios && string.IsNullOrWhiteSpace(Model.Q);
 
     string Tamano(long? bytes)
     {
@@ -14,9 +14,9 @@
     }
 
     string Iniciales(string? nombre) => string.Concat(
-        (nombre ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(p => char.ToUpperInvariant(p[0])));
-
-    var miId = int.Parse(User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier)!);
+        (nombre ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Take(2)
+            .Select(p => char.ToUpperInvariant(p[0])));
 }
 
 @if (TempData["Exito"] != null)
@@ -26,7 +26,7 @@
 
 <div class="pagina-cab">
     <p class="text-muted mb-0">Proyectos académicos compartidos por la comunidad.</p>
-    <a asp-action="Publicar" class="btn btn-primary">➕ Publicar proyecto</a>
+    <a asp-action="Publicar" class="btn btn-primary">+ Publicar proyecto</a>
 </div>
 
 <form asp-action="Index" method="get" class="row g-2 align-items-center mb-4">
@@ -39,8 +39,8 @@
     </div>
     <div class="col-auto">
         <div class="form-check form-switch mb-0">
-            <input type="checkbox" role="switch" name="mios" value="true" id="mios" class="form-check-input"
-            @(Model.Mios ? "checked" : "") />
+            <input type="checkbox" role="switch" name="mios" value="true" id="mios"
+                   class="form-check-input" @(Model.Mios ? "checked" : "") />
             <label class="form-check-label" for="mios">Solo mis proyectos</label>
         </div>
     </div>
@@ -49,10 +49,24 @@
     </div>
 </form>
 
+@if (puedeOrdenar)
+{
+    <div>
+        @Html.AntiForgeryToken()
+        @if (Model.Proyectos.Count > 1)
+        {
+            <p class="text-muted small">
+                Arrastra las tarjetas con el ícono <strong>⋮⋮</strong> para cambiar su orden.
+                <span id="ordenEstado" class="text-success ms-2"></span>
+            </p>
+        }
+    </div>
+}
+
 @if (!Model.Proyectos.Any())
 {
     <div class="vacio">
-        <div class="vacio-icono">🧪</div>
+        <div class="vacio-icono">📂</div>
         <h5>No se encontraron proyectos</h5>
         <p>Prueba con otra búsqueda o publica el tuyo.</p>
         <a asp-action="Publicar" class="btn btn-primary">Publicar un proyecto</a>
@@ -62,44 +76,58 @@ else
 {
     <p class="text-muted small">@Model.Proyectos.Count @(Model.Proyectos.Count == 1 ? "proyecto" : "proyectos")</p>
 
-    <div class="row g-3">
+    <div class="row g-3" id="@(puedeOrdenar ? "reordenable" : null)">
         @foreach (var p in Model.Proyectos)
         {
-            <div class="col-md-6 col-xl-4">
+            <div class="col-md-6 col-xl-4 item-ordenable">
+                @if (puedeOrdenar)
+                {
+                    <input type="hidden" value="@p.Id" class="ids" />
+                }
                 <article class="card proy-card h-100">
                     <div class="card-body d-flex flex-column">
+                        @if (Model.Mios)
+                        {
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="etiqueta">N.° <span class="numero-orden">@p.Orden</span></span>
+                                @if (puedeOrdenar)
+                                {
+                                    <span class="arrastrar" title="Arrastrar para reordenar">⋮⋮</span>
+                                }
+                            </div>
+                        }
+
                         <h5 class="mb-2">@p.Nombre</h5>
                         <p class="text-muted small desc-clamp mb-3" title="@p.Descripcion">@p.Descripcion</p>
 
                         <div class="d-flex flex-wrap gap-1 mb-3">
                             @if (!string.IsNullOrEmpty(p.Carrera))
                             {
-                                <span class="etiqueta">📚 @p.Carrera</span>
+                                <span class="etiqueta">@p.Carrera</span>
                             }
-                            <span class="etiqueta">🏛 @p.Departamento</span>
+                            <span class="etiqueta">@p.Departamento</span>
                         </div>
 
                         <div class="mt-auto">
                             @if (!string.IsNullOrEmpty(p.ArchivoRuta))
                             {
                                 <a asp-action="Descargar" asp-route-id="@p.Id" class="btn btn-outline-primary btn-sm">
-                                    📎 @p.ArchivoNombre <span class="text-muted">(@Tamano(p.ArchivoTamano))</span>
+                                    @p.ArchivoNombre <span class="text-muted">(@Tamano(p.ArchivoTamano))</span>
                                 </a>
                             }
-
                             <div class="pie-proy d-flex align-items-center gap-2">
                                 <div class="avatar-mini">@Iniciales(p.Usuario?.NombreCompleto)</div>
                                 <div class="lh-sm">
-                                    @if (p.UsuarioId == miId)
-                                    {
-                                        <a asp-action="Editar" asp-route-id="@p.Id" class="btn btn-outline-primary btn-sm ms-auto">Editar</a>
-                                    }
                                     <div class="fw-semibold">@p.Usuario?.NombreCompleto</div>
                                     <small class="text-muted">
                                         <span class="badge bg-secondary">@p.Usuario?.Rol</span>
-                                        · @p.FechaDePublicacion.ToString("dd/MM/yyyy")
+                                        • @p.FechaDePublicacion.ToString("dd/MM/yyyy")
                                     </small>
                                 </div>
+                                @if (p.UsuarioId == miId)
+                                {
+                                    <a asp-action="Editar" asp-route-id="@p.Id" class="btn btn-outline-primary btn-sm ms-auto">Editar</a>
+                                }
                             </div>
                         </div>
                     </div>
@@ -107,4 +135,66 @@ else
             </div>
         }
     </div>
+}
+
+@section Scripts {
+    @if (puedeOrdenar)
+    {
+        <script>
+            const urlOrdenar = '@Url.Action("Ordenar")';
+
+            $(function () {
+                $('#reordenable').sortable({
+                    items: '> .item-ordenable',
+                    handle: '.arrastrar',
+                    tolerance: 'pointer',
+                    placeholder: 'col-md-6 col-xl-4 marcador',
+                    forcePlaceholderSize: true,
+                    stop: async function () {
+                        await actualizarOrdenes();
+                    }
+                });
+            });
+
+            async function actualizarOrdenes() {
+                const ids = obtenerIdsDeElementos();
+                renumerar();
+                await enviarIdsAlBackend(ids);
+            }
+
+            function obtenerIdsDeElementos() {
+                return $('.ids').map(function () {
+                    return parseInt($(this).val(), 10);
+                }).get();
+            }
+
+            function renumerar() {
+                $('.numero-orden').each(function (indice) {
+                    $(this).text(indice + 1);
+                });
+            }
+
+            async function enviarIdsAlBackend(ids) {
+                const token = $('input[name="__RequestVerificationToken"]').val();
+                const estado = $('#ordenEstado');
+
+                const respuesta = await fetch(urlOrdenar, {
+                    method: 'POST',
+                    body: JSON.stringify(ids),
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    }
+                });
+
+                if (respuesta.ok) {
+                    estado.text('✓ Orden guardado');
+                    setTimeout(function () { estado.text(''); }, 2000);
+                } else {
+                    alert('No se pudo guardar el orden. Se recargará la lista.');
+                    location.reload();
+                }
+            }
+        </script>
+    }
 }

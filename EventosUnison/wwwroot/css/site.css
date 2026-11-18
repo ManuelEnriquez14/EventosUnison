@@ -1166,4 +1166,29 @@ header {
                 .pill span {
                     padding: 0 .5rem;
                     border-radius: 999px;
-                    background: rgba(255, 255, 255,
+                    background: rgba(255, 255, 255, .05);
+
+
+                    /* ============ ARRASTRAR PROYECTOS ============ */
+                    .arrastrar {
+                        cursor: grab;
+                        user-select: none;
+                        color: var(--uni-suave);
+                        font-size: 1.1rem;
+                        line-height: 1;
+                    }
+
+                        .arrastrar:active {
+                            cursor: grabbing;
+                        }
+
+                    .marcador {
+                        border: 2px dashed var(--uni-cian);
+                        border-radius: 14px;
+                        background: rgba(62, 166, 255, .08);
+                    }
+
+                    .ui-sortable-helper {
+                        opacity: .9;
+                        box-shadow: var(--uni-glow);
+                    }

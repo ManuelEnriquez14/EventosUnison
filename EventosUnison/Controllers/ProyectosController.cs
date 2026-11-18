@@ -6,6 +6,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using System.Data;
 
 namespace EventosUnison.Controllers;
 
@@ -51,11 +54,15 @@ public class ProyectosController : Controller
                 p.Usuario!.NombreCompleto.Contains(q));
         }
 
+
+
+        var ordenada = mios
+        ? consulta.OrderBy(p => p.Orden).ThenBy(p => p.Id)
+        : consulta.OrderByDescending(p => p.FechaDePublicacion);
+
         var modelo = new ProyectosIndexViewModel
         {
-            Proyectos = await consulta
-                .OrderByDescending(p => p.FechaDePublicacion)
-                .ToListAsync(),
+            Proyectos = await ordenada.ToListAsync(),
             Q = q,
             Mios = mios
         };
@@ -110,6 +117,7 @@ public class ProyectosController : Controller
             Carrera = string.IsNullOrWhiteSpace(modelo.Carrera) ? null : modelo.Carrera.Trim(),
             FechaDePublicacion = DateTime.Now,
             UsuarioId = UsuarioId
+            // Ya no calculamos Orden aquí; el SP se encarga
         };
 
         string? rutaCompleta = null;
@@ -136,12 +144,31 @@ public class ProyectosController : Controller
 
         try
         {
-            _db.Proyectos.Add(proyecto);
-            await _db.SaveChangesAsync();
+            var parametroId = new SqlParameter
+            {
+                ParameterName = "@Id",
+                SqlDbType = SqlDbType.Int,
+                Direction = ParameterDirection.Output
+            };
+
+            await _db.Database.ExecuteSqlRawAsync(
+                "EXEC Proyectos_Insertar @Nombre, @Descripcion, @Departamento, @Carrera, @FechaDePublicacion, @UsuarioId, @ArchivoNombre, @ArchivoRuta, @ArchivoTamano, @Id OUTPUT",
+                new SqlParameter("@Nombre", proyecto.Nombre),
+                new SqlParameter("@Descripcion", proyecto.Descripcion),
+                new SqlParameter("@Departamento", proyecto.Departamento),
+                new SqlParameter("@Carrera", (object?)proyecto.Carrera ?? DBNull.Value),
+                new SqlParameter("@FechaDePublicacion", proyecto.FechaDePublicacion),
+                new SqlParameter("@UsuarioId", proyecto.UsuarioId),
+                new SqlParameter("@ArchivoNombre", (object?)proyecto.ArchivoNombre ?? DBNull.Value),
+                new SqlParameter("@ArchivoRuta", (object?)proyecto.ArchivoRuta ?? DBNull.Value),
+                new SqlParameter("@ArchivoTamano", (object?)proyecto.ArchivoTamano ?? DBNull.Value),
+                parametroId
+            );
+
+            proyecto.Id = (int)parametroId.Value;
         }
         catch
         {
-            // Si falla la base de datos, no dejamos el archivo huérfano en el disco
             if (rutaCompleta != null && System.IO.File.Exists(rutaCompleta))
                 System.IO.File.Delete(rutaCompleta);
             throw;
@@ -286,5 +313,28 @@ public class ProyectosController : Controller
 
         var completa = Path.Combine(CarpetaArchivos, ruta);
         if (System.IO.File.Exists(completa)) System.IO.File.Delete(completa);
+    }
+
+    // ---------- ORDENAR (arrastrar y soltar) ----------
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> Ordenar([FromBody] int[] ids)
+    {
+        var misProyectos = await _db.Proyectos.Where(p => p.UsuarioId == UsuarioId).ToListAsync();
+        var porId = misProyectos.ToDictionary(p => p.Id);
+
+        // Igual que en tus documentos: si llega un id que no es del usuario, se rechaza
+        if (ids.Any(id => !porId.ContainsKey(id)))
+            return StatusCode(StatusCodes.Status403Forbidden);
+
+        var orden = 1;
+        foreach (var id in ids.Distinct())
+            porId[id].Orden = orden++;
+
+        // Si algún proyecto del usuario no llegó en la lista, queda al final, conservando su orden
+        foreach (var p in misProyectos.Where(p => !ids.Contains(p.Id)).OrderBy(p => p.Orden))
+            p.Orden = orden++;
+
+        await _db.SaveChangesAsync();
+        return Ok();
     }
 }

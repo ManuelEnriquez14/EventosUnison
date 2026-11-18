@@ -13,4 +13,5 @@ public class Proyecto
     public string? ArchivoNombre { get; set; }
     public string? ArchivoRuta { get; set; }
     public long? ArchivoTamano { get; set; }
+    public int Orden { get; set; }
 }

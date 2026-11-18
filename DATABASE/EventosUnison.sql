@@ -56,6 +56,7 @@ CREATE TABLE InteresEventos (
     EventoId INT NOT NULL REFERENCES Eventos(Id),
     Respuesta NVARCHAR(10) NOT NULL,
     FechaRespuesta DATETIME NOT NULL DEFAULT GETDATE(),
+    Asistio Bit Null,
     CONSTRAINT UQ_InteresEventos UNIQUE (UsuarioId, EventoId),
     CONSTRAINT CK_InteresEventos_Respuesta CHECK (Respuesta IN ('Si', 'TalVez', 'No'))
 );
